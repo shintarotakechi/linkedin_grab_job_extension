@@ -37,6 +37,7 @@ The HTML payload wraps both inner `div`s together and includes a link back to th
 - A **content script** runs on `https://www.linkedin.com/jobs/*`. It watches for changes in the right‑hand details panel (`.jobs-semantic-search-job-details-wrapper`) using a `MutationObserver` and reacts to SPA URL changes (patches `history.pushState/replaceState` and listens to `popstate`).  
 - When a job is loaded or changed, the script grabs the two target elements, builds combined **text** and **HTML**, and asks the background to copy.
 - The **service worker** (background) ensures a **Chrome Offscreen Document** is open and forwards the copy request there.
+- The offscreen document signals when it is ready so the service worker can queue copy requests until the listener is live (prevents "message port closed" errors observed in Chrome 140).
 - The **offscreen page** calls the **Clipboard API** (`navigator.clipboard.write`) to place both `text/html` and `text/plain` on your clipboard. This pattern avoids user‑gesture restrictions that often block clipboard writes from content scripts and service workers in MV3.
 
 **Why Offscreen?** In Manifest V3, service workers have no DOM and can't use the Clipboard API directly; the recommended solution is an offscreen document with reason `CLIPBOARD`. See Chrome’s docs and examples.  

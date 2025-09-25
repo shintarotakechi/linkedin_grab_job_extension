@@ -2,3 +2,5 @@ test*
 logs/
 
 AGENTS.md
+!tests/
+!tests/**

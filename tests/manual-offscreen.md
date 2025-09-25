@@ -1,0 +1,15 @@
+# Manual Test: Offscreen Clipboard Pipeline
+
+## Purpose
+Confirm the service worker waits for the offscreen document to report readiness before forwarding copy requests, ensuring the clipboard receives job data.
+
+## Steps
+1. Load the unpacked extension in Chrome.
+2. Open `chrome://extensions`, toggle the extension off and on, and click **Service worker** to open its console.
+3. Visit a LinkedIn job search URL (e.g., the one in `specification.md`) and click a job entry in the left column to open its details panel.
+4. Observe the service worker console: a single `Offscreen copy error` message should no longer appear; instead, the promise resolves with `{ ok: true }`.
+5. Paste into a text editor and verify that the clipboard contains the job ID, URL, top card, and description sections.
+
+## Expected Result
+- The service worker receives `{ ok: true }` from the offscreen document without `message port closed` errors.
+- The pasted output matches the format described in `specification.md`.
