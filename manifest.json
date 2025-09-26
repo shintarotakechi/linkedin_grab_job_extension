@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Job Detail Auto Copier (Personal)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically copies LinkedIn job details to the clipboard when you open a job in search results (personal use).",
   "permissions": [
     "offscreen",

@@ -3,12 +3,21 @@
   const SELECTORS = {
     wrapper: '.jobs-semantic-search-job-details-wrapper',
     topCard: '.job-details-jobs-unified-top-card__container--two-pane',
-    description: 'div.jobs-box__html-content.jobs-description-content__text--stretch, .jobs-description-content__text--stretch'
+    description: 'div.jobs-box__html-content.jobs-description-content__text--stretch, .jobs-description-content__text--stretch',
+    helpers: '.job-details-people-who-can-help__section--two-pane.artdeco-card.ph5.pv4'
   };
 
   let lastFingerprint = null;
   let lastCopiedJobId = null;
   let debounceTimer = null;
+  let detailsObserver = null;
+  let observedTarget = null;
+  let structureObserver = null;
+
+  function resetFingerprint() {
+    lastFingerprint = null;
+    lastCopiedJobId = null;
+  }
 
   // Patch history to detect LinkedIn SPA URL changes
   function patchHistory(method) {
@@ -28,9 +37,9 @@
   const toast = document.createElement('div');
   const style = document.createElement('style');
   style.textContent = `
-    .li-toast { 
+    .li-toast {
       position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
-      background: rgba(32, 33, 36, .92); color: #fff; padding: 10px 12px; 
+      background: rgba(32, 33, 36, .92); color: #fff; padding: 10px 12px;
       border-radius: 8px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
       box-shadow: 0 4px 12px rgba(0,0,0,.35); opacity: 0; transform: translateY(8px);
       transition: opacity .18s ease, transform .18s ease;
@@ -63,6 +72,32 @@
     });
   }
 
+  function observeDetailsTarget() {
+    const wrapper = document.querySelector(SELECTORS.wrapper);
+    const target = wrapper || document.body;
+    if (!target || observedTarget === target) {
+      return;
+    }
+
+    if (detailsObserver) {
+      detailsObserver.disconnect();
+    }
+
+    detailsObserver = new MutationObserver(debouncedAttempt);
+    detailsObserver.observe(target, { childList: true, subtree: true });
+    observedTarget = target;
+    resetFingerprint();
+    debouncedAttempt();
+  }
+
+  function ensureStructureObserver() {
+    if (structureObserver) return;
+    structureObserver = new MutationObserver(() => {
+      observeDetailsTarget();
+    });
+    structureObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+
   function getJobIdFromUrl() {
     try {
       const url = new URL(location.href);
@@ -86,23 +121,28 @@
   function extract() {
     const topEl = document.querySelector(SELECTORS.topCard);
     const descEl = document.querySelector(SELECTORS.description);
-    if (!topEl && !descEl) return null;
+    const helpersEl = document.querySelector(SELECTORS.helpers);
+    if (!topEl && !descEl && !helpersEl) return null;
 
     const jobId = getJobIdFromUrl();
     const srcUrl = location.href;
 
     const topHtml = topEl ? topEl.innerHTML : '';
     const descHtml = descEl ? descEl.innerHTML : '';
+    const helpersHtml = helpersEl ? helpersEl.innerHTML : '';
     const topText = topEl ? normalizeText(topEl.innerText) : '';
     const descText = descEl ? normalizeText(descEl.innerText) : '';
+    const helpersText = helpersEl ? normalizeText(helpersEl.innerText) : '';
 
     return {
       jobId,
       srcUrl,
       topHtml,
       descHtml,
+      helpersHtml,
       topText,
-      descText
+      descText,
+      helpersText
     };
   }
 
@@ -110,12 +150,13 @@
     return JSON.stringify({
       id: payload.jobId,
       t: payload.topText?.slice(0, 256),
-      d: payload.descText?.slice(0, 256)
+      d: payload.descText?.slice(0, 256),
+      h: payload.helpersText?.slice(0, 256)
     });
   }
 
   function formatPlainText(p) {
-    return [
+    const lines = [
       `LinkedIn Job ID: ${p.jobId || '(unknown)'}`,
       `URL: ${p.srcUrl}`,
       '',
@@ -124,7 +165,11 @@
       '',
       '== Description ==',
       p.descText || '(none)'
-    ].join('\n');
+    ];
+    if (p.helpersText) {
+      lines.push('', '== People Who Can Help ==', p.helpersText);
+    }
+    return lines.join('\n');
   }
 
   function formatHTML(p) {
@@ -138,6 +183,8 @@
     <section data-part="top-card">${p.topHtml || ''}</section>
     <hr/>
     <section data-part="description">${p.descHtml || ''}</section>
+    ${p.helpersHtml ? `<hr/>
+    <section data-part="people-who-can-help">${p.helpersHtml}</section>` : ''}
   </div>
 </body></html>`;
   }
@@ -186,20 +233,7 @@
     debounceTimer = setTimeout(attemptExtractAndCopy, 600);
   }
 
-  async function init() {
-    await waitForWrapper();
-    // Observe changes in the details pane
-    const wrapper = document.querySelector(SELECTORS.wrapper) || document.body;
-    const mo = new MutationObserver(debouncedAttempt);
-    mo.observe(wrapper, { childList: true, subtree: true });
-
-    // Also react to URL changes
-    window.addEventListener('li-url-change', debouncedAttempt, { passive: true });
-
-    // Initial attempt
-    debouncedAttempt();
-
-    // Optional: also react immediately when user clicks a job item
+  function attachClickAccelerator() {
     document.addEventListener('click', (e) => {
       const t = e.target;
       if (!t) return;
@@ -209,6 +243,29 @@
         debounceTimer = setTimeout(attemptExtractAndCopy, 400);
       }
     }, true);
+  }
+
+  function handleUrlChange() {
+    resetFingerprint();
+    observeDetailsTarget();
+    debouncedAttempt();
+  }
+
+  function initObservers() {
+    observeDetailsTarget();
+    ensureStructureObserver();
+  }
+
+  function init() {
+    waitForWrapper().then(() => {
+      observeDetailsTarget();
+      debouncedAttempt();
+    }).catch(() => {});
+
+    initObservers();
+    window.addEventListener('li-url-change', handleUrlChange, { passive: true });
+    attachClickAccelerator();
+    debouncedAttempt();
   }
 
   // Kick off

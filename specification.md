@@ -14,8 +14,12 @@ We extract the contents of:
 2. **Description**  
    CSS: `div.jobs-box__html-content.jobs-description-content__text--stretch`  
    *(We intentionally ignore the random obfuscated class like `LqClAPPDAqtYUZbtGyEWnjMdFeOlIrJc`.)*
+3. **People Who Can Help**  
+   CSS: `.job-details-people-who-can-help__section--two-pane.artdeco-card.ph5.pv4`
+   *(Optional card listing hiring managers or other contacts when LinkedIn surfaces it.)*
 
-Both sections are copied to the clipboard as **rich HTML** (primary) **and** **plain text** (fallback). The plain text payload looks like:
+
+All captured sections are copied to the clipboard as **rich HTML** (primary) **and** **plain text** (fallback). The plain text payload looks like:
 
 ```
 LinkedIn Job ID: 4304445695
@@ -26,6 +30,10 @@ URL: https://www.linkedin.com/jobs/search-results/?currentJobId=4304445695&...
 
 == Description ==
 ...flattened text...
+
+== People Who Can Help == (optional)
+...flattened text when available...
+
 ```
 
 The HTML payload wraps both inner `div`s together and includes a link back to the source URL.
@@ -108,3 +116,4 @@ Chrome’s Offscreen API notes (Chrome 109+, MV3) and clipboard guidance: see Go
 
 - **Offscreen API reference (chrome.offscreen)** — reasons, contexts, and examples.  
 - **Offscreen Documents in Manifest V3 (Chrome blog)** — clipboard example and rationale.
+

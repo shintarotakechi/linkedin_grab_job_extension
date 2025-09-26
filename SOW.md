@@ -1,16 +1,18 @@
-# Statement of Work (2025-09-25)
+# Statement of Work (2025-09-26)
 
 ## Objective
-Ensure the extension reliably copies LinkedIn job content by coordinating the offscreen document lifecycle and handling Chrome 140 focus restrictions on clipboard writes.
+Ensure the LinkedIn auto copier resumes copying after navigation, includes the optional "People Who Can Help" section when present, and ships as version 0.1.1.
 
 ## Scope & Tasks
-- Maintain the background/offscreen readiness handshake so copy requests wait for the listener.
-- Implement a clipboard write strategy inside the offscreen document that copes with `Document is not focused` errors (including safe fallbacks).
-- Update documentation/tests to reflect the readiness handshake and the clipboard fallback behavior.
+- Keep the updated observer logic that reattaches when returning to the jobs search results.
+- Extend extraction/formatting to include the optional `job-details-people-who-can-help__section--two-pane artdeco-card ph5 pv4` block when available.
+- Update clipboard text/HTML output to surface the additional section clearly without breaking existing format.
+- Make sure the manifest version remains bumped to 0.1.1 and adjust manual tests/documentation accordingly.
 
 ## Deliverables
-- Updated extension source code covering the handshake and clipboard fallback.
-- Documentation and manual test instructions capturing verification steps.
+- Updated source code capturing the optional "People Who Can Help" data in both text and HTML payloads.
+- Manual test notes covering the new section handling and navigation scenario.
 
 ## Out of Scope
-- Feature work unrelated to clipboard copying or LinkedIn data extraction.
+- Selector rewrites beyond the new section.
+- Clipboard formatting changes unrelated to the added section.
